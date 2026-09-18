@@ -1,6 +1,10 @@
 import type {ReactNode} from "react";
 import type {SacramentMeeting, Hymn} from "@/lib/types";
-import {MEETING_TYPE_LABELS, NON_SACRAMENT_TYPES} from "@/lib/types";
+import {
+  MEETING_TYPE_LABELS,
+  MEETING_TYPE_COLORS,
+  NON_SACRAMENT_TYPES,
+} from "@/lib/types";
 import {formatMeetingDate} from "@/lib/format";
 
 function HymnLine({label, hymn}: {label: string; hymn: Hymn}) {
@@ -30,6 +34,7 @@ interface MeetingDetailProps {
 
 export default function MeetingDetail({meeting}: MeetingDetailProps) {
   const isNonSacrament = NON_SACRAMENT_TYPES.includes(meeting.meetingType);
+  const typeColor = MEETING_TYPE_COLORS[meeting.meetingType];
   const talks = meeting.speakers.filter((s) => s.type === "speaker");
   const musical = meeting.speakers.filter((s) => s.type === "musical-number");
 
@@ -37,7 +42,9 @@ export default function MeetingDetail({meeting}: MeetingDetailProps) {
     <article className='space-y-6 rounded-card border border-border bg-surface p-6 shadow-sm'>
       {/* Title block */}
       <header className='space-y-1'>
-        <p className='text-sm font-semibold uppercase tracking-wide text-primary'>
+        <p
+          style={{color: typeColor}}
+          className='text-sm font-semibold uppercase tracking-wide'>
           {MEETING_TYPE_LABELS[meeting.meetingType]}
         </p>
         <h1>{formatMeetingDate(meeting.date)}</h1>

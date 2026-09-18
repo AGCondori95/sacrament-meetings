@@ -6,15 +6,22 @@
   --color-foreground: #1f2933;
   --color-muted: #5b626e;
   --color-border: #e3e1dc;
-
   --color-primary: #23395b;
   --color-primary-light: #34527d;
   --color-accent: #7f6636;
+
+  --color-testimony: #6b4c9a;
+  --color-stake: #7f6636;
+  --color-general: #1f2933;
+  --color-special: #b3541e;
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-lora), Georgia, "Times New Roman", serif;
 
   --radius-card: 0.6rem;
+  --radius-pill: 999px;
+
+  --spacing-section: 2rem;
 }
 
 @layer base {
@@ -22,12 +29,17 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
-  /* Headings now use the Lora serif font globally. */
   h1 {
     @apply font-serif text-3xl font-semibold tracking-tight;
   }
   h2 {
     @apply font-serif text-lg font-semibold;
+  }
+  h3 {
+    @apply font-serif text-base font-semibold;
+  }
+  .eyebrow {
+    @apply font-sans text-sm font-semibold uppercase tracking-wide text-accent;
   }
 }
 

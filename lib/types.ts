@@ -1,5 +1,10 @@
 /** The four kinds of Sunday meeting the planner supports. */
-export type MeetingType = "testimony" | "regular" | "stake" | "general";
+export type MeetingType =
+  | "testimony"
+  | "regular"
+  | "stake"
+  | "general"
+  | "special";
 
 /** a hymn reference: hymnbook number + title */
 export interface Hymn {
@@ -56,7 +61,16 @@ export const MEETING_TYPE_LABELS: Record<MeetingType, string> = {
   regular: "Regular Sacrament Meeting",
   stake: "Stake Conference",
   general: "General Conference",
+  special: "Special Meeting",
 };
 
 /** Non-sacrament meeting types (no sacrament ordinance / speaker). */
 export const NON_SACRAMENT_TYPES: MeetingType[] = ["stake", "general"];
+
+export const MEETING_TYPE_COLORS: Record<MeetingType, string> = {
+  testimony: "var(--color-testimony)",
+  regular: "var(--color-primary)",
+  stake: "var(--color-stake)",
+  general: "var(--color-general)",
+  special: "var(--color-special)",
+};

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import type {SacramentMeeting} from "@/lib/types";
-import {MEETING_TYPE_LABELS, NON_SACRAMENT_TYPES} from "@/lib/types";
+import {
+  MEETING_TYPE_LABELS,
+  MEETING_TYPE_COLORS,
+  NON_SACRAMENT_TYPES,
+} from "@/lib/types";
 import {formatMeetingDate} from "@/lib/format";
 
 interface MeetingCardProps {
@@ -12,13 +16,17 @@ export default function MeetingCard({meeting}: MeetingCardProps) {
     (s) => s.type === "speaker",
   ).length;
   const isNonSacrament = NON_SACRAMENT_TYPES.includes(meeting.meetingType);
+  const typeColor = MEETING_TYPE_COLORS[meeting.meetingType];
 
   return (
     <Link
       href={`/meetings/${meeting.id}`}
-      className='block rounded-card border border-border bg-surface p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md'>
+      style={{borderLeftColor: typeColor}}
+      className='block rounded-card border border-l-4 border-border bg-surface p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md'>
       <div className='flex items-center justify-between gap-3'>
-        <span className='rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary'>
+        <span
+          style={{color: typeColor, backgroundColor: `color-mix(in srgb, ${typeColor} 12%, transparent)`}}
+          className='rounded-full px-3 py-1 text-xs font-semibold'>
           {MEETING_TYPE_LABELS[meeting.meetingType]}
         </span>
         {meeting.stakeBusiness && (
