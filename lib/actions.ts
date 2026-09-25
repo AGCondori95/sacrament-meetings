@@ -1,7 +1,6 @@
 "use server";
 
 import type { SpeakerItem } from "@/lib/types";
-import { z } from "zod";
 import {
   addMeeting,
   deleteMeeting as deleteMeetingInDb,
@@ -28,17 +27,6 @@ function parseSpeakers(raw: FormDataEntryValue | null): SpeakerItem[] {
     };
   });
 }
-
-const HymnSchema = z.object({
-  number: z.coerce.number().int().positive("Hymn number must be positive"),
-  title: z.string().min(1, "Hymn title is required"),
-});
-
-const SpeakerItemSchema = z.object({
-  name: z.string().min(1, "Speaker/number name is required"),
-  topic: z.string(),
-  type: z.enum(["speaker", "musical-number"]),
-});
 
 function buildPayload(formData: FormData) {
   return {
@@ -81,7 +69,13 @@ export async function createMeeting(formData: FormData): Promise<void> {
     );
   }
 
-  await addMeeting(validated.data);
+  try {
+    await addMeeting(validated.data);
+  } catch (error) {
+    console.error("createMeeting: database insert failed", error);
+    throw new Error("We could not save this meeting. Please try again.");
+  }
+
   revalidatePath("/meetings");
   redirect("/meetings");
 }
@@ -99,7 +93,16 @@ export async function updateMeeting(
     );
   }
 
-  const updated = await updateMeetingInDb(id, validated.data);
+  let updated;
+  try {
+    updated = await updateMeetingInDb(id, validated.data);
+  } catch (error) {
+    console.error(`updateMeeting: database update failed for #${id}`, error);
+    throw new Error(
+      "We could not save changes to this meeting. Please try again.",
+    );
+  }
+
   if (!updated) {
     throw new Error(`Meeting #${id} was not found.`);
   }
@@ -110,6 +113,13 @@ export async function updateMeeting(
 
 export async function deleteMeeting(formData: FormData): Promise<void> {
   const id = Number(formData.get("id"));
-  await deleteMeetingInDb(id);
+
+  try {
+    await deleteMeetingInDb(id);
+  } catch (error) {
+    console.error(`deleteMeeting: database delete failed for #${id}`, error);
+    throw new Error("We could not delete this meeting. Please try again.");
+  }
+
   revalidatePath("/meetings");
 }
