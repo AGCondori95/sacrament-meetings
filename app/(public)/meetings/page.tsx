@@ -2,6 +2,8 @@ import { getMeetings, getMeetingsTotalPages } from "@/lib/meetings-db";
 import { MeetingSearch } from "@/components/MeetingSearch";
 import MeetingCard from "@/components/MeetingCard";
 import { Pagination } from "@/components/Pagination";
+import Link from "next/link";
+import { deleteMeeting } from "@/lib/actions";
 
 export default async function MeetingsPage(props: {
   searchParams?: Promise<{ query?: string; page?: string }>;
@@ -17,7 +19,16 @@ export default async function MeetingsPage(props: {
 
   return (
     <section className="space-y-4">
-      <h1>All Meetings</h1>
+      <div className="flex items-center justify-between">
+        <h1>All Meetings</h1>
+        <Link
+          href="/meetings/new"
+          className="rounded bg-primary px-3 py-1.5 text-sm text-white"
+        >
+          + New Meeting
+        </Link>
+      </div>
+
       <MeetingSearch />
 
       {meetings.length === 0 ? (
@@ -32,7 +43,26 @@ export default async function MeetingsPage(props: {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {meetings.map((meeting) => (
-            <MeetingCard key={meeting.id} meeting={meeting} />
+            <div key={meeting.id} className="space-y-2">
+              <MeetingCard meeting={meeting} />
+              <div className="flex items-center gap-4 px-1">
+                <Link
+                  href={`/meetings/${meeting.id}/edit`}
+                  className="text-sm text-primary underline"
+                >
+                  Edit
+                </Link>
+                <form action={deleteMeeting}>
+                  <input type="hidden" name="id" value={meeting.id} />
+                  <button
+                    type="submit"
+                    className="text-sm text-red-600 underline"
+                  >
+                    Delete
+                  </button>
+                </form>
+              </div>
+            </div>
           ))}
         </div>
       )}
