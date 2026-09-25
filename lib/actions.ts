@@ -1,24 +1,32 @@
 "use server";
 
-import type { SpeakerItem } from "@/lib/types";
-import {
-  addMeeting,
-  deleteMeeting as deleteMeetingInDb,
-  updateMeeting as updateMeetingInDb,
-} from "@/lib/meetings-db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { MeetingFormSchema } from "@/lib/meeting-schema";
+import {
+  addMeeting,
+  updateMeeting as updateMeetingInDb,
+  deleteMeeting as deleteMeetingInDb,
+} from "@/lib/meetings-db";
+import {
+  MeetingFormSchema,
+  type MeetingFormValues,
+} from "@/lib/meeting-schema";
+import type { SacramentMeeting, SpeakerItem } from "@/lib/types";
 
-function parseLines(raw: FormDataEntryValue | null): string[] {
-  return (raw?.toString() ?? "")
+export type MeetingFormState = {
+  errors?: Record<string, string[]>;
+  message?: string | null;
+};
+
+function linesToArray(value: string): string[] {
+  return value
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 }
 
-function parseSpeakers(raw: FormDataEntryValue | null): SpeakerItem[] {
-  return parseLines(raw).map((line) => {
+function parseSpeakers(raw: string): SpeakerItem[] {
+  return linesToArray(raw).map((line) => {
     const [type, name, ...topicParts] = line.split("|").map((p) => p.trim());
     return {
       type: type === "musical-number" ? "musical-number" : "speaker",
@@ -28,52 +36,55 @@ function parseSpeakers(raw: FormDataEntryValue | null): SpeakerItem[] {
   });
 }
 
-function buildPayload(formData: FormData) {
+function toMeetingRecord(
+  values: MeetingFormValues,
+): Omit<SacramentMeeting, "id"> {
   return {
-    date: formData.get("date")?.toString() ?? "",
-    meetingType: formData.get("meetingType")?.toString() ?? "",
-    presiding: formData.get("presiding")?.toString() ?? "",
-    conducting: formData.get("conducting")?.toString() ?? "",
-    announcements: parseLines(formData.get("announcements")),
+    date: values.date,
+    meetingType: values.meetingType,
+    presiding: values.presiding,
+    conducting: values.conducting,
+    announcements: linesToArray(values.announcements),
     openingHymn: {
-      number: formData.get("openingHymnNumber")?.toString() ?? "",
-      title: formData.get("openingHymnTitle")?.toString() ?? "",
+      number: values.openingHymnNumber,
+      title: values.openingHymnTitle,
     },
-    openingPrayer: formData.get("openingPrayer")?.toString() ?? "",
-    wardBusiness: parseLines(formData.get("wardBusiness")).map(
-      (description) => ({
-        description,
-      }),
-    ),
-    stakeBusiness: formData.get("stakeBusiness") === "on",
+    openingPrayer: values.openingPrayer,
+    wardBusiness: linesToArray(values.wardBusiness).map((description) => ({
+      description,
+    })),
+    stakeBusiness: values.stakeBusiness === "on",
     sacramentHymn: {
-      number: formData.get("sacramentHymnNumber")?.toString() ?? "",
-      title: formData.get("sacramentHymnTitle")?.toString() ?? "",
+      number: values.sacramentHymnNumber,
+      title: values.sacramentHymnTitle,
     },
-    speakers: parseSpeakers(formData.get("speakers")),
+    speakers: parseSpeakers(values.speakers),
     closingHymn: {
-      number: formData.get("closingHymnNumber")?.toString() ?? "",
-      title: formData.get("closingHymnTitle")?.toString() ?? "",
+      number: values.closingHymnNumber,
+      title: values.closingHymnTitle,
     },
-    closingPrayer: formData.get("closingPrayer")?.toString() ?? "",
+    closingPrayer: values.closingPrayer,
   };
 }
 
-export async function createMeeting(formData: FormData): Promise<void> {
-  const validated = MeetingFormSchema.safeParse(buildPayload(formData));
+export async function createMeeting(
+  _prevState: MeetingFormState,
+  formData: FormData,
+): Promise<MeetingFormState> {
+  const validated = MeetingFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!validated.success) {
-    throw new Error(
-      "Invalid meeting data: " +
-        validated.error.issues.map((i) => i.message).join("; "),
-    );
+    return {
+      errors: validated.error.flatten().fieldErrors as Record<string, string[]>,
+      message: "Please fix the errors below.",
+    };
   }
 
   try {
-    await addMeeting(validated.data);
+    await addMeeting(toMeetingRecord(validated.data));
   } catch (error) {
     console.error("createMeeting: database insert failed", error);
-    throw new Error("We could not save this meeting. Please try again.");
+    return { message: "We could not save this meeting. Please try again." };
   }
 
   revalidatePath("/meetings");
@@ -82,29 +93,30 @@ export async function createMeeting(formData: FormData): Promise<void> {
 
 export async function updateMeeting(
   id: number,
+  _prevState: MeetingFormState,
   formData: FormData,
-): Promise<void> {
-  const validated = MeetingFormSchema.safeParse(buildPayload(formData));
+): Promise<MeetingFormState> {
+  const validated = MeetingFormSchema.safeParse(Object.fromEntries(formData));
 
   if (!validated.success) {
-    throw new Error(
-      "Invalid meeting data: " +
-        validated.error.issues.map((i) => i.message).join("; "),
-    );
+    return {
+      errors: validated.error.flatten().fieldErrors as Record<string, string[]>,
+      message: "Please fix the errors below.",
+    };
   }
 
   let updated;
   try {
-    updated = await updateMeetingInDb(id, validated.data);
+    updated = await updateMeetingInDb(id, toMeetingRecord(validated.data));
   } catch (error) {
     console.error(`updateMeeting: database update failed for #${id}`, error);
-    throw new Error(
-      "We could not save changes to this meeting. Please try again.",
-    );
+    return {
+      message: "We could not save changes to this meeting. Please try again.",
+    };
   }
 
   if (!updated) {
-    throw new Error(`Meeting #${id} was not found.`);
+    return { message: `Meeting #${id} was not found.` };
   }
 
   revalidatePath("/meetings");
